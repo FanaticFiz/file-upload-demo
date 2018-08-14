@@ -1,6 +1,5 @@
 package ru.fiz.fileuploaddemo.controller;
 
-import io.swagger.annotations.Api;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

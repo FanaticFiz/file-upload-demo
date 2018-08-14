@@ -2,11 +2,10 @@ package ru.fiz.fileuploaddemo.service;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.beans.Transient;
 import java.nio.file.Path;
 import java.util.concurrent.Future;
 
-public class DownloadInfo {
+public class DownloadModel {
 
     private Path path;
 
@@ -16,7 +15,7 @@ public class DownloadInfo {
 
     private Future<Long> futureDownload;
 
-    public DownloadInfo(@NotNull Path path) {
+    public DownloadModel(@NotNull Path path) {
         this.path = path;
     }
 

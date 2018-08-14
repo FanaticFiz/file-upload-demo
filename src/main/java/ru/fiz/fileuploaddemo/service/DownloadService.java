@@ -15,44 +15,65 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 
+/**
+ * Сервис управления загрузками.
+ */
 @Service
 public class DownloadService implements IDownloadService {
 
     private static Logger log = LoggerFactory.getLogger(DownloadService.class);
 
-    private static final int BUFFER_SIZE = 2048;
+    private static final int BUFFER_SIZE = 8192;
 
+    /**
+     * Менеджер управления потоками.
+     */
     private ExecutorService taskExecutor = Executors.newCachedThreadPool();
 
-    private ConcurrentHashMap<String, DownloadInfo> taskPool = new ConcurrentHashMap<>();
+    /**
+     * Пул тасок.
+     */
+    private ConcurrentHashMap<String, DownloadModel> taskPool = new ConcurrentHashMap<>();
 
+    /**
+     * Загружает и сохраняет файл по указанным путям.
+     *
+     * @param downloadUrl URL для загрузки файла.
+     * @param path Путь сохранения файла.
+     * @return Hfpмер загруженного файла.
+     */
     @Override
     public Future<Long> download(@NotNull URL downloadUrl, @NotNull Path path) {
-        DownloadInfo downloadInfo = new DownloadInfo(path);
+        DownloadModel downloadModel = new DownloadModel(path);
 
-        Future<Long> futureDownload = taskExecutor.submit(downloading(downloadUrl, downloadInfo));
+        Future<Long> futureDownload = taskExecutor.submit(downloading(downloadUrl, downloadModel));
 
-        downloadInfo.setFutureDownload(futureDownload);
-        taskPool.put(path.getFileName().toString(), downloadInfo);
+        downloadModel.setFutureDownload(futureDownload);
+        taskPool.put(path.getFileName().toString(), downloadModel);
 
         return futureDownload;
     }
 
+    /**
+     * Подгатавливает данные для отображения прогресса загрузки по всем таскам.
+     *
+     * @return Модель отображения загрузки.
+     */
     @Override
     public List<UploadFileProgress> getProgress() {
         List<UploadFileProgress> result = new ArrayList<>();
 
-        taskPool.forEach((fileName, downloadInfo) -> {
+        taskPool.forEach((fileName, downloadModel) -> {
             UploadFileProgress fileProgress = new UploadFileProgress(fileName);
-            fileProgress.setSize(downloadInfo.getByteDownloaded());
+            fileProgress.setSize(downloadModel.getByteDownloaded());
 
-            if (downloadInfo.getFutureDownload().isDone()) {
-                fileProgress.setSize(downloadInfo.getByteDownloaded());
-                fileProgress.setFullSize(downloadInfo.getByteDownloaded());
+            if (downloadModel.getFutureDownload().isDone()) {
+                fileProgress.setSize(downloadModel.getByteDownloaded());
+                fileProgress.setFullSize(downloadModel.getByteDownloaded());
                 fileProgress.setDone(true);
             } else {
-                fileProgress.setSize(downloadInfo.getByteDownloaded());
-                fileProgress.setFullSize(downloadInfo.getSize());
+                fileProgress.setSize(downloadModel.getByteDownloaded());
+                fileProgress.setFullSize(downloadModel.getSize());
             }
 
             result.add(fileProgress);
@@ -61,39 +82,43 @@ public class DownloadService implements IDownloadService {
         return result;
     }
 
+    /**
+     * Прерывает все незаконченные загрузки.
+     * Очищает пул тасок и удаляет недогруженные файлы.
+     */
     @Override
     public void stopAll() {
-        taskPool.forEach((fileName, downloadInfo) -> {
-            Future<Long> futureDownload = downloadInfo.getFutureDownload();
+        taskPool.forEach((fileName, downloadModel) -> {
+            Future<Long> futureDownload = downloadModel.getFutureDownload();
             if (!futureDownload.isDone()) {
                 log.debug("Cancel process for file: {}", fileName);
 
                 futureDownload.cancel(true);
 
-                removeNotLoadedFile(downloadInfo);
+                removeNotLoadedFile(downloadModel);
             }
         });
 
         taskPool.clear();
     }
 
-    private void removeNotLoadedFile(@NotNull DownloadInfo downloadInfo) {
+    private void removeNotLoadedFile(@NotNull DownloadModel downloadModel) {
         log.debug("Try remove file");
         try {
-            Files.deleteIfExists(downloadInfo.getPath());
+            Files.deleteIfExists(downloadModel.getPath());
         } catch (IOException e) {
             log.error("Ошибка при попытке удалить файл. {}", e.getLocalizedMessage());
         }
     }
 
     @NotNull
-    private Callable<Long> downloading(@NotNull URL downloadUrl, DownloadInfo downloadInfo) {
+    private Callable<Long> downloading(@NotNull URL downloadUrl, DownloadModel downloadModel) {
         return () -> {
             log.debug("Try downloading");
 
-            File outputFile = new File(downloadInfo.getPath().toUri());
+            File outputFile = new File(downloadModel.getPath().toUri());
             URLConnection downloadFileConnection = downloadUrl.openConnection();
-            downloadInfo.setSize(downloadFileConnection.getContentLengthLong());
+            downloadModel.setSize(downloadFileConnection.getContentLengthLong());
 
             long bytesDownloaded = 0;
             try (InputStream is = downloadFileConnection.getInputStream();
@@ -107,7 +132,7 @@ public class DownloadService implements IDownloadService {
                     bytesDownloaded += bytesCount;
 
                     // log.debug("- {}", bytesDownloaded);
-                    downloadInfo.setByteDownloaded(bytesDownloaded);
+                    downloadModel.setByteDownloaded(bytesDownloaded);
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e.getLocalizedMessage());

@@ -1,7 +1,6 @@
 package ru.fiz.fileuploaddemo.service;
 
 import org.springframework.core.io.Resource;
-import org.springframework.web.multipart.MultipartFile;
 import ru.fiz.fileuploaddemo.dto.UploadFileResponse;
 
 import java.net.URL;

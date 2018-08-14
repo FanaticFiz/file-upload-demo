@@ -1,7 +1,6 @@
 package ru.fiz.fileuploaddemo.service;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,6 +63,12 @@ public class DiskStorageService implements IStorageService {
         }
     }
 
+    /**
+     * Загрузка и апись файла на диск по указзанному URL.
+     *
+     * @param url URL
+     * @return Модель загруженного файла.
+     */
     @Override
     public UploadFileResponse store(URL url) {
         if (StringUtils.getFilenameExtension(url.getFile()) == null) {
