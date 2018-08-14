@@ -12,6 +12,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import ru.fiz.fileuploaddemo.dto.UploadFileResponse;
 import ru.fiz.fileuploaddemo.properties.StorageProperties;
+import ru.fiz.fileuploaddemo.service.exceptions.FileExecutionException;
 import ru.fiz.fileuploaddemo.service.exceptions.FileNotFoundException;
 import ru.fiz.fileuploaddemo.service.exceptions.WrongFileUrlException;
 
@@ -33,7 +34,7 @@ public class DiskStorageService implements IStorageService {
 
     private static Logger log = LoggerFactory.getLogger(DiskStorageService.class);
 
-    private static final String DOWNLOAD_LINK = "/downloadFile/";
+    private static final String DOWNLOAD_LINK = "/files/download/";
 
     private final Path fileStorageDir;
 
@@ -78,13 +79,13 @@ public class DiskStorageService implements IStorageService {
         try {
             fileSize = downloadService.download(url, path).get();
 
-            log.debug("Done");
+            log.debug("Success store");
         } catch (InterruptedException e) {
-            log.error(e.getLocalizedMessage());
+            log.warn("Interrupted, closing");
         } catch (ExecutionException e) {
-            log.error("Ошибка отратобки файла");
+            log.error("Ошибка обработки файла", e);
 
-            throw new WrongFileUrlException(e.getLocalizedMessage());
+            throw new FileExecutionException(e.getLocalizedMessage());
         }
 
         return new UploadFileResponse(fileName, getDownloadUri(fileName), fileSize);

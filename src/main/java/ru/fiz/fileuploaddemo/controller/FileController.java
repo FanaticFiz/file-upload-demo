@@ -1,17 +1,21 @@
 package ru.fiz.fileuploaddemo.controller;
 
+import io.swagger.annotations.Api;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.fiz.fileuploaddemo.dto.UploadFileProgress;
 import ru.fiz.fileuploaddemo.dto.UploadFileResponse;
 import ru.fiz.fileuploaddemo.service.IDownloadService;
 import ru.fiz.fileuploaddemo.service.IStorageService;
+import ru.fiz.fileuploaddemo.service.exceptions.FileExecutionException;
 import ru.fiz.fileuploaddemo.service.exceptions.FileNotFoundException;
 import ru.fiz.fileuploaddemo.service.exceptions.WrongFileUrlException;
 import springfox.documentation.annotations.ApiIgnore;
@@ -21,6 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
+import java.util.concurrent.CancellationException;
 
 @RestController
 public class FileController {
@@ -43,14 +48,25 @@ public class FileController {
         response.sendRedirect("/swagger-ui.html");
     }
 
-    @PostMapping("/upload")
+    @GetMapping("/files")
+    public ResponseEntity<List<String>> listOfFiles() {
+        log.debug("Request to list of files");
+
+        List<String> result = storageService.list();
+        return ResponseEntity
+                .ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(result);
+    }
+
+    @PostMapping("/files/upload")
     public UploadFileResponse uploadByLink(@RequestParam("link") URL link) {
         log.debug("Request to upload file by link: {}", link);
 
         return storageService.store(link);
     }
 
-    @GetMapping("/download/{fileName:.+}")
+    @GetMapping("/files/download/{fileName:.+}")
     public ResponseEntity<Resource> download(@PathVariable String fileName, HttpServletRequest request) {
         log.debug("Request to download file: {}", fileName);
 
@@ -63,31 +79,26 @@ public class FileController {
                 .body(resource);
     }
 
-    @GetMapping("/list")
-    public ResponseEntity<List<String>> listOfFiles() {
-        log.debug("Request to list of files");
-
-        List<String> result = storageService.list();
-        return ResponseEntity
-                .ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(result);
-    }
-
-    @GetMapping("/stop")
+    @GetMapping("/files/stop")
     public ResponseEntity stopLoading() {
         log.debug("Request to stop loading");
 
-        return ResponseEntity.ok("");
+        downloadService.stopAll();
+
+        return ResponseEntity
+                .ok()
+                .body("Success");
     }
 
-    @GetMapping("/progress")
-    public ResponseEntity progress() {
+    @GetMapping("/files/progress")
+    public ResponseEntity<List<UploadFileProgress>> progress() {
         log.debug("Request to progress");
 
-        downloadService.getTaskPool();
+        List<UploadFileProgress> progress = downloadService.getProgress();
 
-        return ResponseEntity.ok("");
+        return ResponseEntity
+                .ok()
+                .body(progress);
     }
 
     @ExceptionHandler(FileNotFoundException.class)
@@ -98,6 +109,16 @@ public class FileController {
     @ExceptionHandler(WrongFileUrlException.class)
     public ResponseEntity<?> handleWrongUrl(WrongFileUrlException e) {
         return ResponseEntity.badRequest().build();
+    }
+
+    @ExceptionHandler(FileExecutionException.class)
+    public ResponseEntity<?> handleWrongUrl(FileExecutionException e) {
+        return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).build();
+    }
+
+    @ExceptionHandler(CancellationException.class)
+    public ResponseEntity<?> handleWrongUrl(CancellationException e) {
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 
     @NotNull
