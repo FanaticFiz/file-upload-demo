@@ -7,8 +7,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class DownloadServiceTest {
 
@@ -25,7 +24,7 @@ public class DownloadServiceTest {
         Path path = Paths.get("resources").toAbsolutePath().subpath(0, 4);
 
         assertNotNull(downloadService.download(new URL(spec), path.resolve(path + "/test.txt")));
-        assertTrue(!downloadService.getProgress().isEmpty());
+        assertFalse(downloadService.getProgress().isEmpty());
 
         downloadService.stopAll();
 
