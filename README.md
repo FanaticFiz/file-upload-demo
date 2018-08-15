@@ -1,6 +1,6 @@
 File upload service
 =====================
-
+[![Build Status](https://travis-ci.org/FanaticFiz/file-upload-demo.svg?branch=master)](https://travis-ci.org/FanaticFiz/file-upload-demo)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/a13cddeedf174d6985939acc000eeba6)](https://www.codacy.com/project/fanatic/file-upload-demo/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=FanaticFiz/file-upload-demo&amp;utm_campaign=Badge_Grade_Dashboard)
 [![](https://images.microbadger.com/badges/image/fanaticfiz/file-upload-service.svg)](https://microbadger.com/images/fanaticfiz/file-upload-service "Get your own image badge on microbadger.com")
  
