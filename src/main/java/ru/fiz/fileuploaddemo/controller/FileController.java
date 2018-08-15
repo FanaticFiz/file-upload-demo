@@ -122,11 +122,12 @@ public class FileController {
 
     @NotNull
     private String determinateContentType(@NotNull HttpServletRequest request, @NotNull Resource resource) {
-        String contentType = null;
+        String contentType;
         try {
-            contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+            String absolutePath = resource.getFile().getAbsolutePath();
+            contentType = request.getServletContext().getMimeType(absolutePath);
         } catch (IOException e) {
-            log.warn("Not determine content type");
+            throw  new FileNotFoundException("Wrong file URL");
         }
 
         if (contentType == null) {

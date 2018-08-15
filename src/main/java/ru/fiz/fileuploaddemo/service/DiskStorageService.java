@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 /**
@@ -64,7 +65,7 @@ public class DiskStorageService implements IStorageService {
     }
 
     /**
-     * Загрузка и апись файла на диск по указзанному URL.
+     * Загрузка и запись файла на диск по указзанному URL.
      *
      * @param url URL
      * @return Модель загруженного файла.
@@ -82,7 +83,8 @@ public class DiskStorageService implements IStorageService {
         long fileSize = 0L;
 
         try {
-            fileSize = downloadService.download(url, path).get();
+            Future<Long> download = downloadService.download(url, path);
+            fileSize = download.get();
 
             log.debug("Success store");
         } catch (InterruptedException e) {
@@ -151,6 +153,10 @@ public class DiskStorageService implements IStorageService {
                 .path(DOWNLOAD_LINK)
                 .path(fileName)
                 .toUriString();
+    }
+
+    public Path getStorageDir() {
+        return fileStorageDir;
     }
 
     @NotNull
